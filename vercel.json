@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "public/**", "use": "@vercel/static" },
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "api/**/*.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/check-name", "dest": "/api/check-name.js" },
+    { "src": "/api/save-result", "dest": "/api/save-result.js" },
+    { "src": "/api/results", "dest": "/api/results.js" },
+    { "src": "/api/unblock", "dest": "/api/unblock.js" },
+    { "src": "/admin.html", "dest": "/public/admin.html" },
+    { "src": "/", "dest": "/index.html" }
+  ]
+}
