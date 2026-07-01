@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — QCM CCNA</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+  #login-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #0d47a1, #00897b);
+  }
+  .login-box {
+    background: #1e293b; border-radius: 16px; padding: 2.5rem;
+    text-align: center; width: 340px; box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .login-box h1 { font-size: 1.6rem; margin-bottom: 0.3rem; color: #60a5fa; }
+  .login-box p { font-size: 0.9rem; color: #94a3b8; margin-bottom: 1.5rem; }
+  .login-box input {
+    width: 100%; padding: 0.8rem 1rem; border: 1px solid #334155;
+    background: #0f172a; color: #e2e8f0; border-radius: 8px; font-size: 1rem;
+    margin-bottom: 0.8rem; outline: none;
+  }
+  .login-box input:focus { border-color: #60a5fa; }
+  .login-box button {
+    width: 100%; padding: 0.8rem; background: #1a73e8; color: white;
+    border: none; border-radius: 8px; font-size: 1rem; font-weight: 700;
+    cursor: pointer;
+  }
+  .login-box button:hover { background: #0d47a1; }
+  #login-error { color: #f87171; font-size: 0.85rem; margin-top: 0.5rem; }
+
+  #admin-screen { display: none; padding: 1.5rem; max-width: 1100px; margin: 0 auto; }
+  header {
+    background: linear-gradient(90deg, #0d47a1, #1a73e8);
+    padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  header h1 { font-size: 1.3rem; }
+  header .stats { font-size: 0.9rem; opacity: 0.85; }
+  .btn-refresh {
+    background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3);
+    padding: 0.5rem 1.2rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+  }
+  .btn-refresh:hover { background: rgba(255,255,255,0.25); }
+
+  .filters { display: flex; gap: 0.8rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filters input, .filters select {
+    background: #1e293b; border: 1px solid #334155; color: #e2e8f0;
+    padding: 0.5rem 0.8rem; border-radius: 6px; font-size: 0.9rem;
+  }
+
+  table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 12px; overflow: hidden; }
+  th { background: #0f172a; padding: 0.8rem 1rem; text-align: left; font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; }
+  td { padding: 0.75rem 1rem; border-bottom: 1px solid #334155; font-size: 0.9rem; }
+  tr:hover td { background: #162032; }
+  .badge {
+    display: inline-block; padding: 0.25rem 0.6rem; border-radius: 999px;
+    font-size: 0.75rem; font-weight: 700;
+  }
+  .badge-success { background: #14532d; color: #4ade80; }
+  .badge-warning { background: #713f12; color: #fbbf24; }
+  .badge-danger { background: #7f1d1d; color: #f87171; }
+  .btn-unblock {
+    background: #0d47a1; color: white; border: none; padding: 0.3rem 0.8rem;
+    border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+  }
+  .btn-unblock:hover { background: #1a73e8; }
+  #no-results { text-align: center; padding: 3rem; color: #94a3b8; }
+  .summary-bar {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;
+  }
+  .stat-card {
+    background: #1e293b; border-radius: 10px; padding: 1rem 1.2rem;
+    border-left: 4px solid #1a73e8;
+  }
+  .stat-card .val { font-size: 2rem; font-weight: 900; color: #60a5fa; }
+  .stat-card .lbl { font-size: 0.8rem; color: #94a3b8; margin-top: 0.2rem; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>🌐 QCM CCNA</h1>
+    <p>Panneau d'administration</p>
+    <input type="password" id="pwd-input" placeholder="Mot de passe admin" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">Connexion</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin-screen">
+  <header>
+    <div>
+      <h1>🌐 Admin — QCM CCNA Réseaux</h1>
+      <div class="stats" id="header-stats">Chargement...</div>
+    </div>
+    <div style="display:flex;gap:0.5rem;align-items:center;">
+      <button class="btn-refresh" onclick="loadResults()">🔄 Rafraîchir</button>
+      <button class="btn-refresh" onclick="exportCSV()">📥 CSV</button>
+      <button class="btn-refresh" style="background:rgba(239,68,68,0.2);border-color:#f87171;" onclick="logout()">🚪 Déconnexion</button>
+    </div>
+  </header>
+
+  <div class="summary-bar">
+    <div class="stat-card"><div class="val" id="stat-total">—</div><div class="lbl">Étudiants</div></div>
+    <div class="stat-card" style="border-color:#4ade80;"><div class="val" id="stat-avg" style="color:#4ade80;">—</div><div class="lbl">Moy. score</div></div>
+    <div class="stat-card" style="border-color:#fbbf24;"><div class="val" id="stat-cheat" style="color:#fbbf24;">—</div><div class="lbl">Infractions</div></div>
+    <div class="stat-card" style="border-color:#f87171;"><div class="val" id="stat-blocked" style="color:#f87171;">—</div><div class="lbl">Bloqués</div></div>
+  </div>
+
+  <div class="filters">
+    <input type="text" id="search" placeholder="🔍 Rechercher un étudiant..." oninput="renderTable()" style="flex:1;min-width:200px;">
+    <select id="filter-status" onchange="renderTable()">
+      <option value="">Tous les statuts</option>
+      <option value="ok">✅ Terminé</option>
+      <option value="bloque">🚫 Bloqué</option>
+    </select>
+    <select id="sort-by" onchange="renderTable()">
+      <option value="date">Trier par date</option>
+      <option value="score">Trier par score</option>
+      <option value="nom">Trier par nom</option>
+    </select>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nom</th>
+        <th>Score</th>
+        <th>%</th>
+        <th>Infractions</th>
+        <th>Statut</th>
+        <th>Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="results-body"></tbody>
+  </table>
+  <div id="no-results" style="display:none;">Aucun résultat trouvé.</div>
+</div>
+
+<script>
+let adminPassword = '';
+let allResults = [];
+
+async function doLogin() {
+  const pwd = document.getElementById('pwd-input').value;
+  const res = await fetch('/api/results', { headers: { 'x-admin-password': pwd } });
+  if (res.ok) {
+    adminPassword = pwd;
+    const data = await res.json();
+    allResults = data.resultats || [];
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-screen').style.display = 'block';
+    renderTable();
+    updateStats();
+  } else {
+    document.getElementById('login-error').textContent = '❌ Mot de passe incorrect.';
+  }
+}
+
+async function loadResults() {
+  const res = await fetch('/api/results', { headers: { 'x-admin-password': adminPassword } });
+  if (res.ok) {
+    const data = await res.json();
+    allResults = data.resultats || [];
+    renderTable();
+    updateStats();
+  }
+}
+
+function updateStats() {
+  const n = allResults.length;
+  const avg = n ? Math.round(allResults.reduce((s, r) => s + r.score, 0) / n * 10) / 10 : 0;
+  const cheats = allResults.filter(r => r.violations > 0).length;
+  const blocked = allResults.filter(r => r.bloque).length;
+  document.getElementById('stat-total').textContent = n;
+  document.getElementById('stat-avg').textContent = avg + '/50';
+  document.getElementById('stat-cheat').textContent = cheats;
+  document.getElementById('stat-blocked').textContent = blocked;
+  document.getElementById('header-stats').textContent = `${n} étudiant(s) — Moy: ${Math.round(avg/50*100)}%`;
+}
+
+function renderTable() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const status = document.getElementById('filter-status').value;
+  const sortBy = document.getElementById('sort-by').value;
+
+  let filtered = allResults.filter(r => {
+    if (search && !r.nom.toLowerCase().includes(search)) return false;
+    if (status === 'ok' && r.bloque) return false;
+    if (status === 'bloque' && !r.bloque) return false;
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    if (sortBy === 'score') return b.score - a.score;
+    if (sortBy === 'nom') return a.nom.localeCompare(b.nom);
+    return new Date(b.date) - new Date(a.date);
+  });
+
+  const tbody = document.getElementById('results-body');
+  const noRes = document.getElementById('no-results');
+
+  if (!filtered.length) {
+    tbody.innerHTML = '';
+    noRes.style.display = 'block';
+    return;
+  }
+  noRes.style.display = 'none';
+
+  tbody.innerHTML = filtered.map((r, i) => {
+    const pct = Math.round((r.score / r.total) * 100);
+    const badge = r.bloque ? '<span class="badge badge-danger">🚫 Bloqué</span>'
+      : r.violations > 0 ? '<span class="badge badge-warning">⚠️ Infraction</span>'
+      : '<span class="badge badge-success">✅ OK</span>';
+    const scoreColor = pct >= 80 ? '#4ade80' : pct >= 60 ? '#fbbf24' : '#f87171';
+    const date = new Date(r.date).toLocaleString('fr-FR');
+    return `<tr>
+      <td style="color:#64748b">${i+1}</td>
+      <td><b>${r.nom}</b></td>
+      <td style="color:${scoreColor};font-weight:700">${r.score}/${r.total}</td>
+      <td style="color:${scoreColor}">${pct}%</td>
+      <td>${r.violations || 0}</td>
+      <td>${badge}</td>
+      <td style="font-size:0.8rem;color:#94a3b8">${date}</td>
+      <td>${r.bloque ? `<button class="btn-unblock" onclick="unblock('${r.nom}')">🔓 Débloquer</button>` : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function unblock(nom) {
+  if (!confirm(`Débloquer ${nom} ?`)) return;
+  const res = await fetch('/api/unblock', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
+    body: JSON.stringify({ nom })
+  });
+  if (res.ok) { alert(`✅ ${nom} a été débloqué.`); loadResults(); }
+  else { alert('❌ Erreur lors du déblocage.'); }
+}
+
+function exportCSV() {
+  const header = 'Nom,Score,Total,Pourcentage,Infractions,Bloqué,Date';
+  const rows = allResults.map(r =>
+    `"${r.nom}",${r.score},${r.total},${Math.round(r.score/r.total*100)}%,${r.violations},${r.bloque?'Oui':'Non'},"${new Date(r.date).toLocaleString('fr-FR')}"`
+  );
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'resultats_ccna.csv';
+  a.click();
+}
+
+function logout() {
+  adminPassword = '';
+  allResults = [];
+  document.getElementById('admin-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pwd-input').value = '';
+}
+
+document.getElementById('pwd-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>
