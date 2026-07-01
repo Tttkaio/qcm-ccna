@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QCM CCNA — Réseaux</title>
+<style>
+  :root {
+    --primary: #1a73e8;
+    --primary-dark: #0d47a1;
+    --success: #2e7d32;
+    --danger: #c62828;
+    --warning: #f57f17;
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --text: #1a1a2e;
+    --muted: #666;
+    --border: #e0e0e0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── ÉCRAN ACCUEIL ── */
+  #screen-home {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #0d47a1 0%, #1a73e8 50%, #00897b 100%);
+    color: white; text-align: center; padding: 2rem;
+  }
+  #screen-home .logo { font-size: 3.5rem; margin-bottom: 1rem; }
+  #screen-home h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+  #screen-home .subtitle { font-size: 1.1rem; opacity: 0.85; margin-bottom: 2.5rem; }
+  #screen-home .rules {
+    background: rgba(255,255,255,0.12); border-radius: 12px;
+    padding: 1.2rem 2rem; margin-bottom: 2rem;
+    text-align: left; max-width: 460px; font-size: 0.95rem;
+    line-height: 1.7;
+  }
+  #screen-home .rules b { display: block; margin-bottom: 0.4rem; font-size: 1rem; }
+  #name-input {
+    width: 100%; max-width: 380px; padding: 0.9rem 1.2rem;
+    font-size: 1.1rem; border: none; border-radius: 8px;
+    margin-bottom: 1rem; outline: none; color: var(--text);
+  }
+  #btn-start {
+    background: #ff6f00; color: white; border: none; padding: 0.9rem 2.5rem;
+    font-size: 1.1rem; font-weight: 700; border-radius: 8px; cursor: pointer;
+    transition: background 0.2s; width: 100%; max-width: 380px;
+  }
+  #btn-start:hover { background: #e65100; }
+  #msg-name { margin-top: 0.8rem; font-size: 0.95rem; min-height: 1.4rem; }
+
+  /* ── ÉCRAN QCM ── */
+  #screen-qcm { display: none; padding: 1rem; max-width: 800px; margin: 0 auto; }
+  .qcm-header {
+    position: sticky; top: 0; z-index: 100;
+    background: linear-gradient(90deg, #0d47a1, #1a73e8);
+    color: white; padding: 0.8rem 1.2rem; border-radius: 0 0 12px 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2); margin-bottom: 1.5rem;
+  }
+  .qcm-header .title { font-weight: 700; font-size: 1rem; }
+  .qcm-header .info { font-size: 0.85rem; opacity: 0.9; }
+  #timer-display { font-size: 1.1rem; font-weight: 700; background: rgba(255,255,255,0.2); padding: 0.3rem 0.8rem; border-radius: 6px; }
+  #progress-bar-wrap { height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-top: 0.4rem; }
+  #progress-bar { height: 100%; background: #ff6f00; border-radius: 2px; transition: width 0.3s; }
+
+  .question-card {
+    background: var(--card); border-radius: 12px; padding: 1.5rem;
+    margin-bottom: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    border-left: 4px solid var(--primary);
+  }
+  .question-card.answered { border-left-color: var(--success); }
+  .q-num { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.4rem; font-weight: 600; text-transform: uppercase; }
+  .q-text { font-size: 1.05rem; font-weight: 600; margin-bottom: 1rem; line-height: 1.5; }
+  .options { display: flex; flex-direction: column; gap: 0.5rem; }
+  .option {
+    display: flex; align-items: center; gap: 0.8rem;
+    padding: 0.75rem 1rem; border-radius: 8px; cursor: pointer;
+    border: 2px solid var(--border); transition: all 0.15s;
+    font-size: 0.97rem; user-select: none;
+  }
+  .option:hover { border-color: var(--primary); background: #e8f0fe; }
+  .option input[type=radio] { accent-color: var(--primary); width: 18px; height: 18px; flex-shrink: 0; }
+  .option.selected { border-color: var(--primary); background: #e8f0fe; }
+
+  #btn-submit {
+    display: block; margin: 1.5rem auto 3rem;
+    background: var(--primary); color: white; border: none;
+    padding: 1rem 3rem; font-size: 1.1rem; font-weight: 700;
+    border-radius: 8px; cursor: pointer; transition: background 0.2s;
+  }
+  #btn-submit:hover { background: var(--primary-dark); }
+
+  /* ── ANTI-TRICHE ── */
+  #cheat-banner {
+    display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+    background: var(--danger); color: white; text-align: center;
+    padding: 0.6rem; font-weight: 700; font-size: 0.95rem;
+    animation: flash 1s infinite;
+  }
+  @keyframes flash { 0%,100%{opacity:1} 50%{opacity:0.7} }
+
+  /* ── ÉCRAN RÉSULTAT ── */
+  #screen-result {
+    display: none; min-height: 100vh;
+    background: linear-gradient(135deg, #0d47a1, #1a73e8);
+    color: white; text-align: center; padding: 3rem 2rem;
+    align-items: center; justify-content: center; flex-direction: column;
+  }
+  #screen-result .result-icon { font-size: 4rem; margin-bottom: 1rem; }
+  #screen-result h2 { font-size: 2rem; margin-bottom: 0.5rem; }
+  .score-big { font-size: 5rem; font-weight: 900; line-height: 1; margin: 1rem 0; }
+  .score-label { font-size: 1.2rem; opacity: 0.85; }
+  .result-details {
+    background: rgba(255,255,255,0.12); border-radius: 12px;
+    padding: 1.2rem 2rem; margin-top: 2rem; font-size: 0.95rem; line-height: 2;
+  }
+  .cheat-warning {
+    background: rgba(198,40,40,0.4); border: 2px solid #ef9a9a;
+    border-radius: 8px; padding: 1rem 1.5rem; margin-top: 1rem;
+    font-weight: 700; font-size: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<div id="cheat-banner">⚠️ VIOLATION DÉTECTÉE — Sortie de l'onglet enregistrée !</div>
+
+<!-- ACCUEIL -->
+<div id="screen-home">
+  <div class="logo">🌐</div>
+  <h1>QCM CCNA — Réseaux</h1>
+  <p class="subtitle">Introduction aux Réseaux v7.0 · 50 Questions · 60 minutes</p>
+  <div class="rules">
+    <b>📋 Règles importantes :</b>
+    Ne quittez pas l'onglet ou la fenêtre.<br>
+    Ne changez pas d'application pendant le test.<br>
+    Toute infraction est enregistrée automatiquement.<br>
+    3 infractions → blocage permanent.<br>
+    Le test ne peut être passé qu'une seule fois.
+  </div>
+  <input id="name-input" type="text" placeholder="Entrez votre prénom et nom" autocomplete="off">
+  <button id="btn-start">Commencer le QCM →</button>
+  <p id="msg-name"></p>
+</div>
+
+<!-- QCM -->
+<div id="screen-qcm">
+  <div class="qcm-header">
+    <div>
+      <div class="title">QCM CCNA — Réseaux</div>
+      <div class="info" id="student-name-display"></div>
+    </div>
+    <div style="text-align:right">
+      <div id="timer-display">60:00</div>
+      <div id="progress-info" style="font-size:0.8rem;opacity:0.8">0 / 50</div>
+    </div>
+  </div>
+  <div id="progress-bar-wrap" style="margin: -1.5rem 0 1.5rem;background:#e0e0e0;height:5px;">
+    <div id="progress-bar" style="width:0%;height:100%;background:#1a73e8;transition:width 0.3s;"></div>
+  </div>
+
+  <div id="questions-container"></div>
+  <button id="btn-submit">✅ Soumettre le QCM</button>
+</div>
+
+<!-- RÉSULTAT -->
+<div id="screen-result" style="display:none; min-height:100vh; background:linear-gradient(135deg,#0d47a1,#1a73e8); color:white; text-align:center; padding:3rem 2rem; display:none; flex-direction:column; align-items:center; justify-content:center;">
+  <div id="result-icon" style="font-size:4rem;margin-bottom:1rem;">🎉</div>
+  <h2 id="result-title" style="font-size:2rem;margin-bottom:0.5rem;">Résultat</h2>
+  <div id="result-name" style="font-size:1.1rem;opacity:0.85;margin-bottom:1rem;"></div>
+  <div id="score-big" style="font-size:5rem;font-weight:900;line-height:1;margin:1rem 0;"></div>
+  <div style="font-size:1.2rem;opacity:0.85;">points sur 50</div>
+  <div id="result-details" style="background:rgba(255,255,255,0.12);border-radius:12px;padding:1.2rem 2rem;margin-top:2rem;font-size:0.95rem;line-height:2;max-width:400px;"></div>
+  <div id="cheat-result" style="display:none;background:rgba(198,40,40,0.4);border:2px solid #ef9a9a;border-radius:8px;padding:1rem 1.5rem;margin-top:1rem;font-weight:700;font-size:1rem;max-width:400px;"></div>
+</div>
+
+<script>
+const QUESTIONS = [
+  // MODULE 2 — Configuration commutateur
+  {
+    q: "Quel symbole identifie le mode d'exécution privilégié dans le CLI Cisco IOS ?",
+    o: [">", "#", "$", "@"], r: 1,
+    m: "Le mode privilégié est identifié par le symbole #, tandis que le mode utilisateur utilise >."
+  },
+  {
+    q: "Quelle commande permet de passer du mode d'exécution utilisateur au mode d'exécution privilégié ?",
+    o: ["configure terminal", "enable", "login", "privileged"], r: 1,
+    m: "La commande 'enable' permet de passer du mode utilisateur (>) au mode privilégié (#)."
+  },
+  {
+    q: "Quelle méthode d'accès est recommandée pour la configuration initiale d'un équipement Cisco ?",
+    o: ["SSH", "Telnet", "Console", "HTTP"], r: 2,
+    m: "Le port Console est utilisé pour la configuration initiale, car il ne nécessite pas de connexion réseau préalable."
+  },
+  {
+    q: "Quelle commande configure un mot de passe chiffré pour le mode d'exécution privilégié ?",
+    o: ["enable password", "enable secret", "line password", "service password"], r: 1,
+    m: "'enable secret' crée un mot de passe haché (MD5) pour le mode privilégié, plus sécurisé que 'enable password'."
+  },
+  {
+    q: "Dans quelle mémoire est stockée la configuration startup-config d'un équipement Cisco ?",
+    o: ["RAM", "Flash", "NVRAM", "ROM"], r: 2,
+    m: "La startup-config est stockée en NVRAM (mémoire non volatile), elle est conservée après un redémarrage."
+  },
+  {
+    q: "Quelle commande chiffre tous les mots de passe en texte clair dans la configuration ?",
+    o: ["enable secret", "service password-encryption", "encrypt passwords", "security passwords min-length"], r: 1,
+    m: "'service password-encryption' chiffre tous les mots de passe en clair présents dans la configuration courante."
+  },
+  {
+    q: "Combien de lignes VTY un commutateur Cisco prend-il en charge pour l'accès à distance ?",
+    o: ["4", "8", "16", "32"], r: 2,
+    m: "Les commutateurs Cisco prennent en charge jusqu'à 16 lignes VTY, numérotées de 0 à 15 (line vty 0 15)."
+  },
+  {
+    q: "Quel protocole assure la configuration automatique des adresses IPv4 sur les périphériques finaux ?",
+    o: ["DNS", "ARP", "DHCP", "ICMP"], r: 2,
+    m: "DHCP (Dynamic Host Configuration Protocol) attribue automatiquement des adresses IPv4 aux périphériques."
+  },
+  {
+    q: "Quelle commande crée un message d'avertissement affiché à chaque connexion sur un équipement Cisco ?",
+    o: ["banner login", "banner motd", "message banner", "warning display"], r: 1,
+    m: "'banner motd' (Message Of The Day) affiche un message d'avertissement légal à chaque connexion."
+  },
+  {
+    q: "Dans quelle mémoire se trouve la configuration running-config en cours d'exécution ?",
+    o: ["NVRAM", "Flash", "RAM", "ROM"], r: 2,
+    m: "La running-config est stockée en RAM. Elle est perdue si l'équipement est éteint sans sauvegarde préalable."
+  },
+
+  // MODULE 3 — Protocoles et modèles
+  {
+    q: "Combien de couches comporte le modèle de référence OSI ?",
+    o: ["4", "5", "6", "7"], r: 3,
+    m: "Le modèle OSI (Open Systems Interconnection) comporte 7 couches, de la couche physique (1) à la couche application (7)."
+  },
+  {
+    q: "Combien de couches comporte le modèle TCP/IP ?",
+    o: ["4", "5", "6", "7"], r: 0,
+    m: "Le modèle TCP/IP comporte 4 couches : Accès réseau, Internet, Transport et Application."
+  },
+  {
+    q: "Comment s'appelle le processus d'ajout d'informations d'en-tête aux données lors de la transmission ?",
+    o: ["Désencapsulation", "Segmentation", "Encapsulation", "Multiplexage"], r: 2,
+    m: "L'encapsulation est le processus descendant par lequel chaque couche ajoute son en-tête aux données."
+  },
+  {
+    q: "Quel organisme est responsable du développement et de la maintenance de la suite de protocoles TCP/IP ?",
+    o: ["IEEE", "ISO", "IETF", "ICANN"], r: 2,
+    m: "L'IETF (Internet Engineering Task Force) maintient les standards TCP/IP et publie les RFC."
+  },
+  {
+    q: "Quelle méthode de remise de messages envoie des données à TOUS les périphériques d'un réseau ?",
+    o: ["Monodiffusion", "Multidiffusion", "Diffusion", "Unicast"], r: 2,
+    m: "La diffusion (broadcast) envoie le message à tous les périphériques du réseau local simultanément."
+  },
+  {
+    q: "Quel protocole est responsable du séquençage et de la réassemblage des segments de données ?",
+    o: ["IP", "UDP", "TCP", "HTTP"], r: 2,
+    m: "TCP (Transmission Control Protocol) numérote les segments pour permettre leur réassemblage dans le bon ordre."
+  },
+  {
+    q: "Comment s'appelle l'unité de données (PDU) au niveau de la couche réseau (couche 3) ?",
+    o: ["Trame", "Paquet", "Segment", "Bit"], r: 1,
+    m: "Le paquet est le PDU de la couche réseau (L3). La trame est L2, le segment est L4, le bit est L1."
+  },
+  {
+    q: "Quel type d'adresse identifie un périphérique au niveau de la couche réseau (couche 3) ?",
+    o: ["Adresse MAC", "Adresse IP", "Adresse physique", "Adresse de port"], r: 1,
+    m: "L'adresse IP est l'adresse logique de couche 3, utilisée pour le routage entre réseaux différents."
+  },
+  {
+    q: "Comment s'appelle le processus de séparation des messages en unités plus petites pour la transmission ?",
+    o: ["Encapsulation", "Multiplexage", "Segmentation", "Codage"], r: 2,
+    m: "La segmentation divise les messages volumineux en segments plus petits pour une transmission efficace."
+  },
+  {
+    q: "Quelle couche OSI est responsable de l'adressage logique et du routage des paquets ?",
+    o: ["Couche liaison de données (L2)", "Couche réseau (L3)", "Couche transport (L4)", "Couche physique (L1)"], r: 1,
+    m: "La couche réseau (L3) gère l'adressage IP et le routage des paquets entre différents réseaux."
+  },
+
+  // MODULE 5 — Systèmes numériques
+  {
+    q: "Combien de bits compose une adresse IPv4 ?",
+    o: ["16 bits", "32 bits", "64 bits", "128 bits"], r: 1,
+    m: "Une adresse IPv4 est composée de 32 bits, représentés en notation décimale pointée (ex: 192.168.1.1)."
+  },
+  {
+    q: "Combien de bits compose une adresse IPv6 ?",
+    o: ["32 bits", "64 bits", "96 bits", "128 bits"], r: 3,
+    m: "Une adresse IPv6 est composée de 128 bits, représentés en notation hexadécimale (ex: 2001:db8::1)."
+  },
+  {
+    q: "Quelle est la valeur décimale du nombre binaire 11000000 ?",
+    o: ["128", "192", "224", "240"], r: 1,
+    m: "11000000 = 128+64 = 192. C'est le premier octet de l'adresse 192.168.x.x (classe C)."
+  },
+  {
+    q: "En quelle base est exprimé le système hexadécimal ?",
+    o: ["Base 2", "Base 8", "Base 10", "Base 16"], r: 3,
+    m: "Le système hexadécimal est en base 16, utilisant les chiffres 0-9 et les lettres A-F."
+  },
+  {
+    q: "Combien d'octets compose une adresse IPv4 ?",
+    o: ["2 octets", "4 octets", "6 octets", "8 octets"], r: 1,
+    m: "Une adresse IPv4 est composée de 4 octets (4 x 8 bits = 32 bits) séparés par des points."
+  },
+  {
+    q: "Quelle est la valeur décimale du nombre binaire 10101000 ?",
+    o: ["128", "148", "168", "188"], r: 2,
+    m: "10101000 = 128+32+8 = 168. C'est le deuxième octet de 192.168.x.x."
+  },
+  {
+    q: "Comment sont représentées les adresses IPv6 ?",
+    o: ["En décimal séparé par des points", "En binaire pur", "En hexadécimal séparé par des deux-points", "En octal"], r: 2,
+    m: "Les adresses IPv6 utilisent la notation hexadécimale, séparée par des deux-points (ex: 2001:db8:acad::1)."
+  },
+  {
+    q: "Quelle est la valeur binaire du nombre décimal 10 en 8 bits ?",
+    o: ["00001000", "00001010", "00001100", "00010000"], r: 1,
+    m: "10 = 8+2 = 00001010 en binaire (positions 3 et 1 à 1)."
+  },
+  {
+    q: "Quelle lettre hexadécimale représente la valeur décimale 15 ?",
+    o: ["D", "E", "F", "G"], r: 2,
+    m: "F est la lettre hexadécimale qui représente 15. A=10, B=11, C=12, D=13, E=14, F=15."
+  },
+  {
+    q: "Combien de caractères hexadécimaux (hextets) compose une adresse IPv6 complète ?",
+    o: ["16", "32", "48", "64"], r: 1,
+    m: "128 bits ÷ 4 bits par caractère hexadécimal = 32 caractères hexadécimaux au total."
+  },
+
+  // MODULE 6 — Couche liaison de données
+  {
+    q: "De quelles deux sous-couches se compose la couche liaison de données IEEE 802 ?",
+    o: ["TCP et UDP", "LLC et MAC", "IP et ARP", "Physical et Logical"], r: 1,
+    m: "La couche liaison de données se divise en LLC (Logical Link Control) et MAC (Media Access Control)."
+  },
+  {
+    q: "Quel protocole CSMA est utilisé dans les anciens réseaux Ethernet filaires pour détecter les collisions ?",
+    o: ["CSMA/CA", "CSMA/CD", "CSMA/CB", "CSMA/CE"], r: 1,
+    m: "CSMA/CD (Carrier Sense Multiple Access with Collision Detection) est utilisé dans les anciens réseaux Ethernet."
+  },
+  {
+    q: "Quelle topologie WAN est la plus simple, consistant en une liaison permanente entre deux terminaux ?",
+    o: ["Hub-and-spoke", "Maillée partielle", "Point à point", "Étoile"], r: 2,
+    m: "La topologie point à point est la plus simple : une connexion directe et permanente entre deux nœuds."
+  },
+  {
+    q: "Quel mode de communication autorise un seul appareil à envoyer ou recevoir à la fois sur un support partagé ?",
+    o: ["Duplex intégral", "Semi-duplex", "Simplex", "Multiplex"], r: 1,
+    m: "Le semi-duplex permet la communication dans les deux sens, mais pas simultanément."
+  },
+  {
+    q: "Comment s'appelle l'adresse de couche 2 utilisée pour la livraison locale d'une trame sur un réseau ?",
+    o: ["Adresse IP", "Adresse MAC", "Adresse logique", "Adresse de port"], r: 1,
+    m: "L'adresse MAC (Media Access Control) est l'adresse physique de couche 2, gravée dans la carte réseau."
+  },
+  {
+    q: "Quels sont les trois éléments composant une trame de liaison de données ?",
+    o: ["Adresse, Données, Checksum", "En-tête, Données, Queue", "Source, Canal, Destination", "Header, Payload, MTU"], r: 1,
+    m: "Une trame est composée d'un en-tête (header), des données et d'une queue (trailer/FCS)."
+  },
+  {
+    q: "Quelle norme IEEE régit les réseaux WLAN (Wi-Fi) ?",
+    o: ["IEEE 802.3", "IEEE 802.11", "IEEE 802.15", "IEEE 802.16"], r: 1,
+    m: "IEEE 802.11 définit les standards Wi-Fi (WLAN). IEEE 802.3 est pour Ethernet filaire."
+  },
+  {
+    q: "Quelle topologie LAN est la plus couramment utilisée dans les réseaux locaux modernes ?",
+    o: ["Bus", "Anneau", "Maillée", "Étoile"], r: 3,
+    m: "La topologie étoile (ou étoile étendue) est la plus courante dans les LAN modernes : facile à installer et évolutive."
+  },
+  {
+    q: "Quel mode de communication permet à deux périphériques d'envoyer ET de recevoir simultanément ?",
+    o: ["Semi-duplex", "Simplex", "Duplex intégral", "Half-duplex"], r: 2,
+    m: "Le duplex intégral (full-duplex) permet la transmission simultanée dans les deux sens."
+  },
+  {
+    q: "Quel protocole d'accès au support est utilisé par le WLAN IEEE 802.11 pour éviter les collisions ?",
+    o: ["CSMA/CD", "Token Ring", "CSMA/CA", "ALOHA"], r: 2,
+    m: "CSMA/CA (Collision Avoidance) est utilisé dans les WLAN 802.11 car la détection de collision est impossible en sans-fil."
+  },
+
+  // MODULE 10 — Configuration de base du routeur
+  {
+    q: "Quelle commande Cisco IOS permet de définir le nom d'hôte d'un routeur ?",
+    o: ["set hostname R1", "hostname R1", "device-name R1", "name R1"], r: 1,
+    m: "La commande 'hostname [nom]' en mode de configuration globale définit le nom d'hôte de l'équipement."
+  },
+  {
+    q: "Quelle commande affiche un résumé de toutes les interfaces IPv4 d'un routeur avec leur état ?",
+    o: ["show ip route", "show interfaces", "show ip interface brief", "show version"], r: 2,
+    m: "'show ip interface brief' affiche un résumé rapide : interface, adresse IP, état administratif et protocole."
+  },
+  {
+    q: "Dans quel mode de configuration IOS faut-il se trouver pour configurer une interface de routeur ?",
+    o: ["Mode d'exécution utilisateur", "Mode d'exécution privilégié", "Mode configuration globale", "Mode configuration d'interface"], r: 3,
+    m: "Le mode configuration d'interface (config-if) est atteint avec 'interface [type] [numéro]' depuis le mode global."
+  },
+  {
+    q: "Quelle commande active une interface de routeur administrativement désactivée ?",
+    o: ["enable interface", "interface up", "no shutdown", "activate"], r: 2,
+    m: "'no shutdown' (no shut) active une interface. Par défaut, les interfaces de routeur sont désactivées."
+  },
+  {
+    q: "Quelle commande sauvegarde la configuration courante (RAM) vers la mémoire non volatile (NVRAM) ?",
+    o: ["save configuration", "write memory", "copy running-config startup-config", "store config nvram"], r: 2,
+    m: "'copy running-config startup-config' sauvegarde la configuration active en NVRAM (aussi : 'write memory')."
+  },
+  {
+    q: "Qu'est-ce que la passerelle par défaut (default gateway) pour un hôte ?",
+    o: ["L'adresse IP du serveur DNS", "L'adresse IP de l'interface locale du routeur", "L'adresse MAC du commutateur", "L'adresse de diffusion du réseau"], r: 1,
+    m: "La passerelle par défaut est l'adresse IP de l'interface du routeur sur le même réseau que l'hôte."
+  },
+  {
+    q: "Quelle commande configure la passerelle par défaut sur un commutateur Cisco ?",
+    o: ["default-gateway [ip]", "ip route 0.0.0.0", "ip default-gateway [ip]", "gateway [ip]"], r: 2,
+    m: "'ip default-gateway [adresse IP]' configure la passerelle par défaut sur un commutateur pour l'administration à distance."
+  },
+  {
+    q: "Quelle commande affiche la table de routage IPv4 d'un routeur Cisco ?",
+    o: ["show ip interface brief", "show interfaces", "show arp", "show ip route"], r: 3,
+    m: "'show ip route' affiche la table de routage avec les réseaux directement connectés (C), statiques (S), OSPF (O), etc."
+  },
+  {
+    q: "Quelle commande ajoute une description textuelle sur une interface de routeur ?",
+    o: ["label [texte]", "comment [texte]", "description [texte]", "interface-name [texte]"], r: 2,
+    m: "'description [texte]' ajoute une description à une interface. Pratique pour documenter les connexions."
+  },
+  {
+    q: "Quelle commande vérifie les statistiques détaillées d'une interface spécifique, y compris les erreurs ?",
+    o: ["show ip interface brief", "show ip route", "show interfaces [interface]", "show version"], r: 2,
+    m: "'show interfaces' affiche les statistiques détaillées : état, adresse MAC, MTU, erreurs, débit, etc."
+  }
+];
+
+// ── STATE ──
+let studentName = '';
+let violations = 0;
+const MAX_VIOLATIONS = 3;
+let timerInterval = null;
+let timeLeft = 60 * 60; // 60 min
+let submitted = false;
+
+// ── ANTI-CHEAT ──
+function recordViolation(reason) {
+  if (submitted) return;
+  violations++;
+  const banner = document.getElementById('cheat-banner');
+  banner.textContent = `⚠️ VIOLATION #${violations}/${MAX_VIOLATIONS} — ${reason}`;
+  banner.style.display = 'block';
+  setTimeout(() => { if (!submitted) banner.style.display = 'none'; }, 4000);
+  if (violations >= MAX_VIOLATIONS) {
+    submitQCM(true);
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && !submitted && studentName) {
+    recordViolation('Sortie de l\'onglet détectée');
+  }
+});
+window.addEventListener('blur', () => {
+  if (!submitted && studentName) {
+    recordViolation('Perte de focus de la fenêtre');
+  }
+});
+document.addEventListener('contextmenu', e => { if (studentName && !submitted) e.preventDefault(); });
+document.addEventListener('keydown', e => {
+  if (!studentName || submitted) return;
+  if (e.key === 'F12' || (e.ctrlKey && ['u','i','j','s'].includes(e.key.toLowerCase()))) {
+    e.preventDefault();
+    recordViolation('Tentative d\'accès aux outils développeur');
+  }
+});
+
+// ── DÉMARRAGE ──
+document.getElementById('btn-start').addEventListener('click', async () => {
+  const nom = document.getElementById('name-input').value.trim();
+  const msg = document.getElementById('msg-name');
+  if (!nom) { msg.textContent = '❌ Veuillez entrer votre nom.'; msg.style.color = '#ff6f00'; return; }
+  msg.textContent = '⏳ Vérification...'; msg.style.color = 'rgba(255,255,255,0.7)';
+
+  try {
+    const res = await fetch('/api/check-name', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nom })
+    });
+    const data = await res.json();
+    if (res.status === 200 && data.ok) {
+      studentName = nom;
+      startQCM();
+    } else if (res.status === 403) {
+      msg.textContent = '🚫 Vous avez été bloqué pour tentative de triche.';
+      msg.style.color = '#ff5252';
+    } else if (res.status === 409) {
+      msg.textContent = '⚠️ Ce nom a déjà passé le QCM. Contactez votre professeur.';
+      msg.style.color = '#ffab40';
+    } else {
+      msg.textContent = '❌ Erreur : ' + (data.error || 'Inconnue');
+      msg.style.color = '#ff5252';
+    }
+  } catch (e) {
+    msg.textContent = '❌ Erreur de connexion au serveur.';
+    msg.style.color = '#ff5252';
+  }
+});
+
+function startQCM() {
+  document.getElementById('screen-home').style.display = 'none';
+  document.getElementById('screen-qcm').style.display = 'block';
+  document.getElementById('student-name-display').textContent = '👤 ' + studentName;
+  renderQuestions();
+  startTimer();
+}
+
+// ── RENDU QUESTIONS ──
+function renderQuestions() {
+  const container = document.getElementById('questions-container');
+  QUESTIONS.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.id = 'q' + i;
+    card.innerHTML = `
+      <div class="q-num">Question ${i + 1} / ${QUESTIONS.length}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="options">
+        ${q.o.map((opt, j) => `
+          <label class="option" id="opt-${i}-${j}">
+            <input type="radio" name="q${i}" value="${j}" onchange="selectOption(${i}, ${j})">
+            <span>${String.fromCharCode(65+j)}. ${opt}</span>
+          </label>
+        `).join('')}
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function selectOption(qi, oi) {
+  const card = document.getElementById('q' + qi);
+  card.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+  document.getElementById(`opt-${qi}-${oi}`).classList.add('selected');
+  card.classList.add('answered');
+  updateProgress();
+}
+
+function updateProgress() {
+  let answered = 0;
+  QUESTIONS.forEach((_, i) => {
+    if (document.querySelector(`input[name="q${i}"]:checked`)) answered++;
+  });
+  document.getElementById('progress-info').textContent = `${answered} / ${QUESTIONS.length}`;
+  document.getElementById('progress-bar').style.width = `${(answered / QUESTIONS.length) * 100}%`;
+}
+
+// ── TIMER ──
+function startTimer() {
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+    const s = (timeLeft % 60).toString().padStart(2, '0');
+    const display = document.getElementById('timer-display');
+    display.textContent = `${m}:${s}`;
+    if (timeLeft <= 300) display.style.color = '#ff5252';
+    if (timeLeft <= 0) { clearInterval(timerInterval); submitQCM(false); }
+  }, 1000);
+}
+
+// ── SOUMISSION ──
+document.getElementById('btn-submit').addEventListener('click', () => {
+  const answered = QUESTIONS.filter((_, i) => document.querySelector(`input[name="q${i}"]:checked`)).length;
+  const remaining = QUESTIONS.length - answered;
+  if (remaining > 0) {
+    if (!confirm(`Vous n'avez pas répondu à ${remaining} question(s). Soumettre quand même ?`)) return;
+  }
+  submitQCM(false);
+});
+
+async function submitQCM(forced) {
+  if (submitted) return;
+  submitted = true;
+  clearInterval(timerInterval);
+  document.getElementById('cheat-banner').style.display = 'none';
+
+  let score = 0;
+  const details = QUESTIONS.map((q, i) => {
+    const sel = document.querySelector(`input[name="q${i}"]:checked`);
+    const chosen = sel ? parseInt(sel.value) : -1;
+    const correct = chosen === q.r;
+    if (correct) score++;
+    return { question: i + 1, chosen, correct_answer: q.r, correct, message: q.m };
+  });
+
+  try {
+    await fetch('/api/save-result', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nom: studentName, score, total: QUESTIONS.length, violations, details })
+    });
+  } catch (e) {}
+
+  showResult(score, forced);
+}
+
+function showResult(score, blocked) {
+  document.getElementById('screen-qcm').style.display = 'none';
+  const sr = document.getElementById('screen-result');
+  sr.style.display = 'flex';
+
+  const pct = Math.round((score / QUESTIONS.length) * 100);
+  let icon = pct >= 80 ? '🏆' : pct >= 60 ? '👍' : '📚';
+  let title = pct >= 80 ? 'Excellent travail !' : pct >= 60 ? 'Bien joué !' : 'À revoir...';
+
+  document.getElementById('result-icon').textContent = icon;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-name').textContent = '👤 ' + studentName;
+  document.getElementById('score-big').textContent = score;
+  document.getElementById('result-details').innerHTML = `
+    points sur 50
+  `;
+
+  if (violations > 0) {
+    const cr = document.getElementById('cheat-result');
+    cr.style.display = 'block';
+    cr.textContent = blocked
+      ? `🚫 Votre passage a été bloqué après ${violations} infraction(s) de triche.`
+      : `⚠️ ${violations} infraction(s) enregistrée(s) pendant votre passage.`;
+  }
+}
+</script>
+</body>
+</html>
